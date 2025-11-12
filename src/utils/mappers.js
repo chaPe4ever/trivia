@@ -1,4 +1,4 @@
-// Example result (single object)
+// Example result category question count lookup
 // {
 //     "category_id": 9,
 //     "category_question_count": {
@@ -17,5 +17,30 @@ export const mapCategoryInfo = (apiResponse) => {
       medium: apiResponse.category_question_count.total_medium_question_count,
       hard: apiResponse.category_question_count.total_hard_question_count,
     },
+  };
+};
+
+// Example result trivia question
+// {
+//     "type": "multiple",
+//     "difficulty": "easy",
+//     "category": "Entertainment: Video Games",
+//     "question": "The &quot;Day of Defeat&quot; series of games take place during which war?",
+//     "correct_answer": "World War II",
+//     "incorrect_answers": [
+//       "World War I",
+//       "Vietnam War",
+//       "Iraq War"
+//     ]
+//   },
+
+export const mapTriviaQuestion = (apiResponse) => {
+  return {
+    type: apiResponse.type,
+    difficulty: apiResponse.difficulty,
+    categoryName: apiResponse.category,
+    question: apiResponse.question,
+    correctAnswer: apiResponse.correct_answer,
+    incorrectAnswers: apiResponse.incorrect_answers,
   };
 };

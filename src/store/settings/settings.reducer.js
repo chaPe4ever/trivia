@@ -1,14 +1,14 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { QuestionsType } from '../../utils/types';
 
 const INITIAL_STATE = {
   triviaCategories: [],
-  userSelectionOptions: {
+  triviaSettings: {
     questionsNumber: 10,
     type: 'Any Type',
     difficulty: 'Any Difficulty',
-    category: 'Any Category',
+    category: {},
   },
+  token: '',
 };
 
 export const settingsSlice = createSlice({
@@ -18,13 +18,16 @@ export const settingsSlice = createSlice({
     setTriviaCategories(state, action) {
       state.triviaCategories = action.payload;
     },
-    setUserSelectionOptions(state, action) {
-      state.userSelectionOptions = action.payload;
+    setTriviaSettings(state, action) {
+      state.triviaSettings = action.payload;
+    },
+    setToken(state, action) {
+      state.token = action.payload;
     },
   },
 });
 
-export const { setTriviaCategories, setUserSelectionOptions } =
+export const { setTriviaCategories, setTriviaSettings, setToken } =
   settingsSlice.actions;
 
 export const settingsReducer = settingsSlice.reducer;
