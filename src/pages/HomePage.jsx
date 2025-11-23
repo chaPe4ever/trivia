@@ -1,0 +1,284 @@
+import axios from 'axios';
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  setToken,
+  setTriviaCategories,
+  setTriviaSettings,
+} from '../store/settings/settings.reducer';
+import { selectCategories } from '../store/settings/settings.selector';
+import { Difficulty, QuestionsType } from '../utils/types';
+import { cn } from '../utils/helpers';
+import {
+  setQuestionIndex,
+  setTriviaQuestions,
+} from '../store/trivia/trivia.reducer';
+import { useNavigate } from 'react-router';
+import {
+  fetchAllCategoriesInfoFromCatId,
+  fetchCategoryInfo,
+  fetchQuestionsFromSettings,
+  fetchToken,
+} from '../utils/api';
+
+const HomePage = () => {
+  // Hooks
+  const [category, setCategory] = useState('Any Category');
+  const [difficulty, setDifficulty] = useState('Any Difficulty');
+  const [type, setType] = useState('Any Type');
+  const [questionsNumber, setQuestionsNumber] = useState(10);
+  const [maxAvailableQuestions, setMaxAvailableQuestions] = useState(10);
+  const [isLoading, setIsLoading] = useState(false);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    async function fetchTriviaCategoriesAsync() {
+      try {
+        setIsLoading(true);
+        const res = await axios.get('https://opentdb.com/api_category.php');
+        const triviaCategories = res.data['trivia_categories'];
+        dispatch(setTriviaCategories(triviaCategories));
+        return triviaCategories;
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        console.error('Error response:', error.response);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchTriviaCategoriesAsync().then((categories) =>
+      fetchAllCategoriesInfoFromCatId(categories.map((cat) => cat.id)).then(
+        (maxQs) => setMaxAvailableQuestions(maxQs)
+      )
+    );
+    // dispatch is stable and doesn't need to be in dependencies
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Selectors
+  const categories = useSelector(selectCategories);
+
+  // Functions
+  async function submitHandler(e) {
+    e.preventDefault();
+    try {
+      setIsLoading(true);
+      // Validation Checks
+
+      let maxQs = maxAvailableQuestions;
+      // extract the key that questionsCount obj expects
+      const difficultyKey = Object.values(Difficulty).includes(difficulty)
+        ? difficulty.toLowerCase()
+        : 'total';
+
+      // userSelectedCat will be found if it's not of 'Any Category' option
+      const userSelectedCat = categories.find((cat) => cat.name === category);
+
+      if (userSelectedCat) {
+        // Fetches categoryInfo of questios count
+        const categoryInfo = await fetchCategoryInfo(userSelectedCat.id);
+
+        maxQs = categoryInfo.questionsCount[difficultyKey];
+      } else {
+        const categoriesInfo = await fetchAllCategoriesInfoFromCatId(
+          categories.map((cat) => cat.id)
+        );
+
+        maxQs = categoriesInfo
+          .map((categoryInfo) => categoryInfo.questionsCount[difficultyKey])
+          .reduce((prev, acc) => prev + acc, 0);
+      }
+      setMaxAvailableQuestions(maxQs);
+
+      // Check if the numb of questions is way too many for the available ones
+      if (questionsNumber > maxQs) {
+        alert(
+          `The number of questions you picked is too high. You can pick for your current selected options up to ${maxQs}`
+        );
+      }
+      const token = await fetchToken();
+      dispatch(setToken(token));
+      const triviaSettings = {
+        questionsNumber,
+        type,
+        difficulty,
+        category: userSelectedCat ? { ...userSelectedCat } : {},
+      };
+
+      dispatch(setTriviaSettings(triviaSettings));
+
+      // Fetch the questions based on user selection
+      const questions = await fetchQuestionsFromSettings({
+        triviaSettings,
+        token,
+      });
+      // Save the questions to store
+      dispatch(setTriviaQuestions(questions));
+      // Start the game with an initial index
+      dispatch(setQuestionIndex(0));
+      // Navigate to the question page begining with the first question in the list
+      navigate('/question');
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function onChangeHanlder(e) {
+    e.preventDefault();
+    const { name, value } = e.target;
+
+    switch (name) {
+      case 'category':
+        setCategory(value);
+        break;
+      case 'difficulty':
+        setDifficulty(value);
+        break;
+      case 'type':
+        setType(value);
+        break;
+      case 'questions-number':
+        setQuestionsNumber(value);
+        break;
+
+      default:
+        throw Error(`There is an unhandled case of: ${name}`);
+    }
+  }
+
+  return (
+    <div className="flex h-screen flex-col items-center justify-center gap-5 p-10">
+      <h1 className="text-4xl font-extrabold">Welcome to trivia app!</h1>
+      <form
+        className="flex flex-col gap-5 rounded-xl border-2 border-amber-200 p-10"
+        onSubmit={submitHandler}
+      >
+        <h3 className="mb-2 text-xl font-semibold">
+          To start over please select your desired options
+        </h3>
+        <section className="flex flex-col gap-2">
+          <label
+            htmlFor="category"
+            className="text-sm font-medium text-gray-700 md:text-base"
+          >
+            Select category
+          </label>
+          <select
+            name="category"
+            value={category}
+            onChange={onChangeHanlder}
+            className={cn(
+              'w-full rounded-lg border-2 border-amber-200 bg-white px-4 py-2.5 text-gray-900',
+              'hover:border-amber-300',
+              isLoading && 'cursor-not-allowed opacity-60'
+            )}
+            disabled={isLoading}
+          >
+            <option className="bg-amber-50">Any Category</option>
+            {categories &&
+              categories.map((cat) => (
+                <option key={cat.id} className="bg-white">
+                  {cat.name}
+                </option>
+              ))}
+          </select>
+        </section>
+        <section className="flex flex-col gap-2">
+          <label
+            htmlFor="difficulty"
+            className="text-sm font-medium text-gray-700 md:text-base"
+          >
+            Select difficulty
+          </label>
+          <select
+            name="difficulty"
+            value={difficulty}
+            onChange={onChangeHanlder}
+            className={cn(
+              'w-full rounded-lg border-2 border-amber-200 bg-white px-4 py-2.5 text-gray-900',
+              'hover:border-amber-300',
+              isLoading && 'cursor-not-allowed opacity-60'
+            )}
+            disabled={isLoading}
+          >
+            <option className="bg-white">Any Difficulty</option>
+            {Object.entries(Difficulty).map(([key, value]) => {
+              return (
+                <option key={key} className="bg-white">
+                  {value}
+                </option>
+              );
+            })}
+          </select>
+        </section>
+        <section className="flex flex-col gap-2">
+          <label
+            htmlFor="type"
+            className="text-sm font-medium text-gray-700 md:text-base"
+          >
+            Select question type
+          </label>
+          <select
+            name="type"
+            value={type}
+            onChange={onChangeHanlder}
+            className={cn(
+              'w-full rounded-lg border-2 border-amber-200 bg-white px-4 py-2.5 text-gray-900',
+              'hover:border-amber-300',
+              isLoading && 'cursor-not-allowed opacity-60'
+            )}
+            disabled={isLoading}
+          >
+            <option className="bg-white">Any Type</option>
+            {Object.entries(QuestionsType).map(([key, value]) => {
+              return (
+                <option key={key} className="bg-white">
+                  {value}
+                </option>
+              );
+            })}
+          </select>
+        </section>
+        <section className="flex flex-col gap-2">
+          <label
+            htmlFor="questions-number"
+            className="text-sm font-medium text-gray-700 md:text-base"
+          >
+            Select number of questions
+          </label>
+          <input
+            id="questions-number"
+            className={cn(
+              'w-full rounded-lg border-2 border-amber-200 bg-white px-4 py-2.5 text-gray-900',
+              'hover:border-amber-300',
+              '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
+              isLoading && 'cursor-not-allowed opacity-60'
+            )}
+            type="number"
+            name="questions-number"
+            min={1}
+            value={questionsNumber}
+            disabled={isLoading}
+            onChange={onChangeHanlder}
+          />
+        </section>
+        <button
+          className={cn(
+            'mt-10 rounded-xl bg-amber-500 px-1 py-2',
+            isLoading ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+          )}
+          type="submit"
+          disabled={isLoading}
+        >
+          Start
+        </button>
+      </form>
+    </div>
+  );
+};
+
+export default HomePage;
