@@ -145,6 +145,39 @@ The app includes robust error handling:
 - Network errors with proper error states
 - Non-serializable error objects are properly transformed for Redux
 
+## Deployment
+
+### Building for Production
+
+```bash
+npm run build
+```
+
+This creates an optimized production build in the `dist/` directory.
+
+### Important: Client-Side Routing Configuration
+
+When deploying a React Router SPA, you need to configure your server to serve `index.html` for all routes. Otherwise, direct navigation to routes like `/question` or `/result` will result in a 404 error.
+
+The project includes configuration files for common hosting platforms:
+
+- **Vercel**: Uses `vercel.json` (already included)
+- **Netlify**: Uses `netlify.toml` or `public/_redirects` (both included)
+- **Nginx**: Add this to your server config:
+  ```nginx
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+  ```
+
+**Which file to use:**
+
+- If hosting on **Vercel**: The `vercel.json` file will be automatically used
+- If hosting on **Netlify**: The `netlify.toml` file will be automatically used
+- If hosting on **GitHub Pages**: You may need to use a 404.html workaround or configure redirects in repository settings
+
+After deploying, test that direct navigation to `/question` or `/result` works correctly.
+
 ## License
 
 This project is open source and available for educational purposes.
