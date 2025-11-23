@@ -9,7 +9,7 @@ const QuestionCard = ({
   onAnswerClick,
 }) => {
   return (
-    <div className="flex w-1/2 flex-col items-center justify-center gap-10 rounded-xl border-2 border-amber-200 p-5 text-xl">
+    <div className="flex w-full flex-col items-center justify-center gap-10 rounded-xl border-2 border-amber-200 p-5 text-xl md:w-1/2">
       {question && (
         <p dangerouslySetInnerHTML={{ __html: question.question }} />
       )}
