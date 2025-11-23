@@ -9,8 +9,15 @@ export const selectQuestion = createSelector(
     if (!trivia || Object.keys(trivia).length === 0) {
       return {};
     }
+    if (
+      !trivia.questions ||
+      !Array.isArray(trivia.questions) ||
+      trivia.questions.length === 0
+    ) {
+      return {};
+    }
     const question = trivia.questions[0];
-    return question;
+    return question || {};
   }
 );
 
@@ -18,9 +25,19 @@ export const selectAnswers = createSelector([selectTriviaReducer], (trivia) => {
   if (!trivia || Object.keys(trivia).length === 0) {
     return [];
   }
+  if (
+    !trivia.questions ||
+    !Array.isArray(trivia.questions) ||
+    trivia.questions.length === 0
+  ) {
+    return [];
+  }
   const question = trivia.questions[0];
 
   if (!question || Object.keys(question).length === 0) {
+    return [];
+  }
+  if (!question.incorrectAnswers || !question.correctAnswer) {
     return [];
   }
   const answers = [...question.incorrectAnswers, question.correctAnswer];
@@ -41,7 +58,12 @@ export const selectQuestionProgress = createSelector(
   }
 );
 
-export const selectCorrectQuestionsAndAnswers = createSelector(
+export const selectWrongQuestions = createSelector(
   [selectTriviaReducer],
-  (trivia) => trivia.correctQuestionsAndAnswers
+  (trivia) => trivia.wrongQuestions
+);
+
+export const selectError = createSelector(
+  [selectTriviaReducer],
+  (trivia) => trivia.error
 );

@@ -53,6 +53,8 @@ const HomePage = () => {
         (maxQs) => setMaxAvailableQuestions(maxQs)
       )
     );
+    // dispatch is stable and doesn't need to be in dependencies
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Selectors
@@ -76,11 +78,11 @@ const HomePage = () => {
 
       if (userSelectedCat) {
         // Fetches categoryInfo of questios count
-        const categoryInfo = fetchCategoryInfo(userSelectedCat.id);
+        const categoryInfo = await fetchCategoryInfo(userSelectedCat.id);
 
         maxQs = categoryInfo.questionsCount[difficultyKey];
       } else {
-        const categoriesInfo = fetchAllCategoriesInfoFromCatId(
+        const categoriesInfo = await fetchAllCategoriesInfoFromCatId(
           categories.map((cat) => cat.id)
         );
 
@@ -149,51 +151,113 @@ const HomePage = () => {
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex h-screen flex-col items-center justify-center gap-5 p-10">
       <h1 className="text-4xl font-extrabold">Welcome to trivia app!</h1>
       <form
-        className="flex flex-col gap-4 border-2 border-amber-200 p-2"
+        className="flex flex-col gap-5 rounded-xl border-2 border-amber-200 p-10"
         onSubmit={submitHandler}
       >
-        <h3 className="mb-2">
+        <h3 className="mb-2 text-xl font-semibold">
           To start over please select your desired options
         </h3>
-        <section>
-          <label htmlFor="category">Select category: </label>
-          <select name="category" value={category} onChange={onChangeHanlder}>
-            <option className="border-2 border-amber-100 bg-amber-200">
-              Any Category
-            </option>
+        <section className="flex flex-col gap-2">
+          <label
+            htmlFor="category"
+            className="text-sm font-medium text-gray-700 md:text-base"
+          >
+            Select category
+          </label>
+          <select
+            name="category"
+            value={category}
+            onChange={onChangeHanlder}
+            className={cn(
+              'w-full rounded-lg border-2 border-amber-200 bg-white px-4 py-2.5 text-gray-900',
+              'hover:border-amber-300',
+              isLoading && 'cursor-not-allowed opacity-60'
+            )}
+            disabled={isLoading}
+          >
+            <option className="bg-amber-50">Any Category</option>
             {categories &&
-              categories.map((cat) => <option key={cat.id}>{cat.name}</option>)}
+              categories.map((cat) => (
+                <option key={cat.id} className="bg-white">
+                  {cat.name}
+                </option>
+              ))}
           </select>
         </section>
-        <section>
-          <label htmlFor="difficulty">Select difficulty: </label>
+        <section className="flex flex-col gap-2">
+          <label
+            htmlFor="difficulty"
+            className="text-sm font-medium text-gray-700 md:text-base"
+          >
+            Select difficulty
+          </label>
           <select
             name="difficulty"
             value={difficulty}
             onChange={onChangeHanlder}
+            className={cn(
+              'w-full rounded-lg border-2 border-amber-200 bg-white px-4 py-2.5 text-gray-900',
+              'hover:border-amber-300',
+              isLoading && 'cursor-not-allowed opacity-60'
+            )}
+            disabled={isLoading}
           >
-            <option>Any Difficulty</option>
+            <option className="bg-white">Any Difficulty</option>
             {Object.entries(Difficulty).map(([key, value]) => {
-              return <option key={key}>{value}</option>;
+              return (
+                <option key={key} className="bg-white">
+                  {value}
+                </option>
+              );
             })}
           </select>
         </section>
-        <section>
-          <label htmlFor="type">Select question type: </label>
-          <select name="type" value={type} onChange={onChangeHanlder}>
-            <option>Any Type</option>
+        <section className="flex flex-col gap-2">
+          <label
+            htmlFor="type"
+            className="text-sm font-medium text-gray-700 md:text-base"
+          >
+            Select question type
+          </label>
+          <select
+            name="type"
+            value={type}
+            onChange={onChangeHanlder}
+            className={cn(
+              'w-full rounded-lg border-2 border-amber-200 bg-white px-4 py-2.5 text-gray-900',
+              'hover:border-amber-300',
+              isLoading && 'cursor-not-allowed opacity-60'
+            )}
+            disabled={isLoading}
+          >
+            <option className="bg-white">Any Type</option>
             {Object.entries(QuestionsType).map(([key, value]) => {
-              return <option key={key}>{value}</option>;
+              return (
+                <option key={key} className="bg-white">
+                  {value}
+                </option>
+              );
             })}
           </select>
         </section>
-        <section>
-          <label>Select number of questions: </label>
+        <section className="flex flex-col gap-2">
+          <label
+            htmlFor="questions-number"
+            className="text-sm font-medium text-gray-700 md:text-base"
+          >
+            Select number of questions
+          </label>
           <input
-            className={cn(isLoading && 'cursor-not-allowed opacity-60')}
+            id="questions-number"
+            className={cn(
+              'w-full rounded-lg border-2 border-amber-200 bg-white px-4 py-2.5 text-gray-900',
+              'hover:border-amber-300',
+              '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
+              isLoading && 'cursor-not-allowed opacity-60'
+            )}
             type="number"
             name="questions-number"
             min={1}
@@ -204,7 +268,7 @@ const HomePage = () => {
         </section>
         <button
           className={cn(
-            'rounded-xl border-2 bg-amber-500 px-1 py-2 transition-opacity',
+            'mt-10 rounded-xl bg-amber-500 px-1 py-2',
             isLoading ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
           )}
           type="submit"

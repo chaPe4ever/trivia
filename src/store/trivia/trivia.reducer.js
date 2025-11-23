@@ -12,8 +12,24 @@ export const triviaSlice = createSlice({
     setQuestionIndex(state, action) {
       state.questionIndex = action.payload;
     },
-    setCorrectQuestionsAndAnswers(state, action) {
-      state.correctQuestionsAndAnswers = action.payload;
+    setWrongQuestions(state, action) {
+      state.wrongQuestions = action.payload;
+    },
+    setError(state, action) {
+      // Store only serializable error information
+      if (action.payload) {
+        const error = action.payload;
+        state.error = {
+          message: error.message || 'An error occurred',
+          status: error.response?.status || error.status || null,
+          code: error.code || null,
+        };
+      } else {
+        state.error = null;
+      }
+    },
+    clearError(state) {
+      state.error = null;
     },
   },
 });
@@ -21,7 +37,9 @@ export const triviaSlice = createSlice({
 export const {
   setTriviaQuestions,
   setQuestionIndex,
-  setCorrectQuestionsAndAnswers,
+  setWrongQuestions,
+  setError,
+  clearError,
 } = triviaSlice.actions;
 
 export const triviaReducer = triviaSlice.reducer;
